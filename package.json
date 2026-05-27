@@ -1,0 +1,14 @@
+{
+  "name": "turtlecode",
+  "private": true,
+  "packageManager": "pnpm@10.30.3",
+  "engines": { "node": ">=22" },
+  "pnpm": { "onlyBuiltDependencies": ["esbuild"] },
+  "scripts": {
+    "dev": "pnpm --filter @turtlecode/web dev",
+    "build": "pnpm --filter @turtlecode/web build",
+    "preview": "pnpm --filter @turtlecode/web preview",
+    "typecheck": "pnpm --filter @turtlecode/web exec tsc -b",
+    "test": "pnpm --filter @turtlecode/web test"
+  }
+}
