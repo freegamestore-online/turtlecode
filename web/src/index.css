@@ -70,3 +70,6 @@ body {
 .turtle-indicator {
   animation: turtle-blink 3s ease infinite;
 }
+
+/* Legacy game components share the canonical paper surface. */
+:root { --bg: var(--paper); }
