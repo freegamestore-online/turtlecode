@@ -51,7 +51,8 @@ function cloneState(s: TurtleState): TurtleState {
     penDown: s.penDown,
     penColor: s.penColor,
     penSize: s.penSize,
-    trail: [...s.trail],
+    // Shared, not copied: the trail is only ever replaced (never mutated in place)
+    trail: s.trail,
   };
 }
 

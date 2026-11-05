@@ -38,6 +38,46 @@ function saveStars(map: Record<number, number>) {
   localStorage.setItem("turtlecode_stars", JSON.stringify(map));
 }
 
+function loadSavedCode(): Record<number, string> {
+  try {
+    const raw = localStorage.getItem("turtlecode_code");
+    if (raw) return JSON.parse(raw) as Record<number, string>;
+  } catch {
+    /* ignore */
+  }
+  return {};
+}
+
+function loadCode(levelId: number): string {
+  return (
+    loadSavedCode()[levelId] ??
+    levels.find((l) => l.id === levelId)?.starterCode ??
+    ""
+  );
+}
+
+function saveCode(levelId: number, code: string) {
+  try {
+    localStorage.setItem(
+      "turtlecode_code",
+      JSON.stringify({ ...loadSavedCode(), [levelId]: code }),
+    );
+    localStorage.setItem("turtlecode_level", String(levelId));
+  } catch {
+    /* ignore */
+  }
+}
+
+function loadLevel(): number {
+  try {
+    const id = Number(localStorage.getItem("turtlecode_level"));
+    if (levels.some((l) => l.id === id)) return id;
+  } catch {
+    /* ignore */
+  }
+  return 1;
+}
+
 function computeStars(
   commandCount: number,
   thresholds: [number, number, number],
@@ -58,8 +98,8 @@ const INITIAL_TURTLE: TurtleState = {
 };
 
 function GameContent() {
-  const [levelId, setLevelId] = useState(1);
-  const [code, setCode] = useState(levels[0]?.starterCode ?? "");
+  const [levelId, setLevelId] = useState(loadLevel);
+  const [code, setCode] = useState(() => loadCode(levelId));
   const [steps, setSteps] = useState<TurtleStep[]>([]);
   const [statementCount, setStatementCount] = useState(0);
   const [stepIndex, setStepIndex] = useState(-1);
@@ -74,13 +114,23 @@ function GameContent() {
   const [completedLevels, setCompletedLevels] = useState(loadCompleted);
   const [starRatings, setStarRatings] = useState(loadStars);
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const completeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Read by the running animation so speed changes apply mid-run
+  const speedRef = useRef(speed);
+  useEffect(() => {
+    speedRef.current = speed;
+  }, [speed]);
 
   const level = useMemo(
     () => levels.find((l) => l.id === levelId) ?? levels[0]!,
     [levelId],
   );
   const target = useMemo(() => levelTarget(level), [level]);
+
+  useEffect(() => {
+    saveCode(levelId, code);
+  }, [levelId, code]);
 
   // Current display state
   const currentStep =
@@ -94,14 +144,20 @@ function GameContent() {
   // Cleanup timer on unmount
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (completeTimerRef.current) clearTimeout(completeTimerRef.current);
     };
   }, []);
 
   const clearRunning = useCallback(() => {
     if (timerRef.current) {
-      clearInterval(timerRef.current);
+      clearTimeout(timerRef.current);
       timerRef.current = null;
+    }
+    // A pending success modal belongs to the run being cleared
+    if (completeTimerRef.current) {
+      clearTimeout(completeTimerRef.current);
+      completeTimerRef.current = null;
     }
     setIsRunning(false);
   }, []);
@@ -123,9 +179,8 @@ function GameContent() {
   const handleLevelChange = useCallback(
     (id: number) => {
       clearRunning();
-      const newLevel = levels.find((l) => l.id === id);
       setLevelId(id);
-      setCode(newLevel?.starterCode ?? "");
+      setCode(loadCode(id));
       setSteps([]);
       setStepIndex(-1);
       setMessage("");
@@ -181,7 +236,7 @@ function GameContent() {
         return prev;
       });
 
-      setTimeout(() => setShowComplete(true), 400);
+      completeTimerRef.current = setTimeout(() => setShowComplete(true), 400);
     },
     [level, target],
   );
@@ -204,42 +259,29 @@ function GameContent() {
       return;
     }
 
-    if (error) {
-      // Runtime error partway through — show steps up to error
-      setIsRunning(true);
-      let idx = 0;
-      setStepIndex(0);
-
-      timerRef.current = setInterval(() => {
-        idx++;
-        if (idx >= execSteps.length) {
-          clearRunning();
-          setStepIndex(execSteps.length - 1);
-          setMessage(error);
-          setIsError(true);
-          return;
-        }
-        setStepIndex(idx);
-      }, speed);
-      return;
-    }
-
-    // Animate through steps
+    // Animate through steps; a runtime error is shown once the steps up to it have played
     setIsRunning(true);
     let idx = 0;
     setStepIndex(0);
 
-    timerRef.current = setInterval(() => {
+    const tick = () => {
       idx++;
       if (idx >= execSteps.length) {
         clearRunning();
         setStepIndex(execSteps.length - 1);
-        finishExecution(execSteps, statements);
+        if (error) {
+          setMessage(error);
+          setIsError(true);
+        } else {
+          finishExecution(execSteps, statements);
+        }
         return;
       }
       setStepIndex(idx);
-    }, speed);
-  }, [code, speed, level, handleReset, clearRunning, finishExecution]);
+      timerRef.current = setTimeout(tick, speedRef.current);
+    };
+    timerRef.current = setTimeout(tick, speedRef.current);
+  }, [code, level, handleReset, clearRunning, finishExecution]);
 
   const handleStep = useCallback(() => {
     if (steps.length === 0) {
@@ -328,7 +370,7 @@ function GameContent() {
         </div>
 
         {/* Editor + Controls */}
-        <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden border-t border-[var(--line)] p-3 landscape:border-t-0 landscape:border-l md:border-t-0 md:border-l">
+        <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto border-t border-[var(--line)] p-3 landscape:border-t-0 landscape:border-l md:border-t-0 md:border-l">
           <GameControls
             onRun={handleRun}
             onStep={handleStep}
