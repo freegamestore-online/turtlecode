@@ -12,12 +12,18 @@ interface CodeEditorProps {
 
 // --- Syntax highlighting ---
 
-const KEYWORDS = /\b(repeat)\b/g;
-const MOVEMENT = /\b(forward|fd|back|bk)\b/g;
-const TURNS = /\b(right|rt|left|lt)\b/g;
-const PEN_CMDS = /\b(penUp|penDown|penColor|penSize|pu|pd|color)\b/g;
-const NUMBERS = /\b(\d+(?:\.\d+)?)\b/g;
-const STRINGS = /(&quot;[^&]*?&quot;|&#x27;[^&]*?&#x27;)/g;
+// One pass over the escaped line, so no rule can match markup another rule
+// inserted. Group order = colour order below.
+const TOKENS =
+  /(&quot;[^&]*?&quot;|&#x27;[^&]*?&#x27;)|\b(repeat)\b|\b(forward|fd|back|bk)\b|\b(right|rt|left|lt)\b|\b(penUp|penDown|penColor|penSize|pu|pd|color)\b|\b(\d+(?:\.\d+)?)\b/g;
+const TOKEN_COLORS = [
+  "#e5c07b", // strings: yellow
+  "#c678dd", // keywords: purple
+  "#61afef", // movement: blue
+  "#98c379", // turns: green
+  "#d19a66", // pen commands: orange
+  "#d19a66", // numbers: orange
+];
 
 function escapeHtml(text: string): string {
   return text
@@ -28,7 +34,7 @@ function escapeHtml(text: string): string {
     .replace(/'/g, "&#x27;");
 }
 
-function highlightCode(code: string): string {
+export function highlightCode(code: string): string {
   return code
     .split("\n")
     .map((rawLine) => {
@@ -52,13 +58,11 @@ function highlightCode(code: string): string {
 }
 
 function highlightExpression(line: string): string {
-  return line
-    .replace(KEYWORDS, '<span style="color:#c678dd">$1</span>') // purple
-    .replace(MOVEMENT, '<span style="color:#61afef">$1</span>') // blue
-    .replace(TURNS, '<span style="color:#98c379">$1</span>') // green
-    .replace(PEN_CMDS, '<span style="color:#d19a66">$1</span>') // orange
-    .replace(STRINGS, '<span style="color:#e5c07b">$1</span>') // yellow
-    .replace(NUMBERS, '<span style="color:#d19a66">$1</span>'); // orange
+  return line.replace(TOKENS, (match, ...groups: unknown[]) => {
+    // Exactly one capture group matched; its index picks the colour.
+    const i = groups.findIndex((g) => g !== undefined);
+    return `<span style="color:${TOKEN_COLORS[i]}">${match}</span>`;
+  });
 }
 
 export default function CodeEditor({
