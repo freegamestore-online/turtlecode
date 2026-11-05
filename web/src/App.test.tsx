@@ -64,6 +64,8 @@ describe("success modal timer", () => {
     expect(container.textContent).toContain("Drawing complete!");
     advance(400);
     expect(container.textContent).toContain("Drawing Complete!");
+    expect(localStorage.getItem("turtlecode_completed")).toBe("[1]");
+    expect(localStorage.getItem("turtlecode_stars")).toBe('{"1":3}');
   });
 
   it("does not appear when Reset is pressed right after a win", () => {
