@@ -455,4 +455,40 @@ describe("TurtleCode interpreter", () => {
       expect(segs[0]!.color).toBe("#ef4444");
     });
   });
+
+  // ── Statement counting ──────────────────────────────────────
+
+  describe("statement count", () => {
+    it("counts source statements, not executed steps", () => {
+      const result = execute("repeat(4) { fd(100); rt(90) }");
+      expect(result.steps.length - 1).toBe(8);
+      expect(result.statements).toBe(3);
+    });
+
+    it("counts nested repeats and ignores comments", () => {
+      const result = execute("// petals\nrepeat(6) { repeat(36) { fd(5); rt(10) } rt(60) }");
+      expect(result.statements).toBe(5);
+    });
+
+    it("comment-only program has zero statements", () => {
+      expect(execute("// nothing here\n").statements).toBe(0);
+    });
+  });
+
+  // ── Allowed commands ────────────────────────────────────────
+
+  describe("allowed commands", () => {
+    it("rejects a command not in the allowed list", () => {
+      const result = execute("forward(10)\nright(90)", ["forward", "fd"]);
+      expect(result.error).toBe("Line 2: right() isn't available in this level");
+    });
+
+    it("accepts programs using only allowed commands", () => {
+      expect(execute("fd(10)", ["forward", "fd"]).error).toBeNull();
+    });
+
+    it("allows everything when no list is given", () => {
+      expect(execute("right(90)").error).toBeNull();
+    });
+  });
 });

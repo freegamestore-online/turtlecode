@@ -31,6 +31,10 @@ export interface Level {
   starThresholds: [number, number, number]; // [3-star, 2-star, 1-star] max command counts
   availableCommands: string[];
   starterCode: string;
+  /** Reference program; its trail is the target. Omitted = freestyle. */
+  solution?: string;
+  /** Pen colour and size must match the target too, not just the shape. */
+  matchStyle?: boolean;
 }
 
 export const COMMAND_HELP: Record<string, { syntax: string; desc: string }> = {

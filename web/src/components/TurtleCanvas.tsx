@@ -1,8 +1,10 @@
 import { useRef, useEffect, useCallback, useState } from "react";
-import type { TurtleState } from "../types";
+import type { LineSegment, TurtleState } from "../types";
 
 interface TurtleCanvasProps {
   turtle: TurtleState;
+  /** The level's target drawing, shown as a faint guide. */
+  target: LineSegment[];
 }
 
 const GRID_SPACING = 50;
@@ -74,6 +76,28 @@ function drawTrail(
   }
 }
 
+function drawTarget(
+  ctx: CanvasRenderingContext2D,
+  target: LineSegment[],
+  offsetX: number,
+  offsetY: number,
+  zoom: number,
+) {
+  ctx.save();
+  ctx.globalAlpha = 0.22;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const seg of target) {
+    ctx.beginPath();
+    ctx.strokeStyle = seg.color;
+    ctx.lineWidth = (seg.width + 4) * zoom;
+    ctx.moveTo(offsetX + seg.x1 * zoom, offsetY + seg.y1 * zoom);
+    ctx.lineTo(offsetX + seg.x2 * zoom, offsetY + seg.y2 * zoom);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawTurtle(
   ctx: CanvasRenderingContext2D,
   turtle: TurtleState,
@@ -125,7 +149,7 @@ function drawTurtle(
   }
 }
 
-export default function TurtleCanvas({ turtle }: TurtleCanvasProps) {
+export default function TurtleCanvas({ turtle, target }: TurtleCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -160,9 +184,10 @@ export default function TurtleCanvas({ turtle }: TurtleCanvasProps) {
     const offsetY = height / 2;
 
     drawGrid(ctx, width, height, offsetX, offsetY, zoom);
+    drawTarget(ctx, target, offsetX, offsetY, zoom);
     drawTrail(ctx, turtle, offsetX, offsetY, zoom);
     drawTurtle(ctx, turtle, offsetX, offsetY, zoom);
-  }, [turtle, zoom]);
+  }, [turtle, target, zoom]);
 
   useEffect(() => {
     draw();

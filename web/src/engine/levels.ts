@@ -1,5 +1,7 @@
 import type { Level } from "../types";
 
+const RAINBOW = ["red", "orange", "yellow", "green", "blue", "purple"];
+
 export const levels: Level[] = [
   {
     id: 1,
@@ -10,16 +12,18 @@ export const levels: Level[] = [
     starThresholds: [1, 2, 3],
     availableCommands: ["forward", "fd"],
     starterCode: "// Move the turtle forward!\nforward(100)\n",
+    solution: "forward(100)",
   },
   {
     id: 2,
     name: "Turn & Draw",
     description: "Move forward, turn, then move again.",
     hint: "Use right(90) to turn 90 degrees.",
-    targetDescription: "An L-shaped line: up then right.",
+    targetDescription: "An L shape: 100 pixels up, then 100 pixels right.",
     starThresholds: [3, 5, 8],
     availableCommands: ["forward", "fd", "right", "rt"],
     starterCode: "// Draw an L shape\n",
+    solution: "forward(100)\nright(90)\nforward(100)",
   },
   {
     id: 3,
@@ -30,6 +34,7 @@ export const levels: Level[] = [
     starThresholds: [3, 6, 10],
     availableCommands: ["forward", "fd", "right", "rt", "repeat"],
     starterCode: "// Draw a square\n",
+    solution: "repeat(4) { forward(100); right(90) }",
   },
   {
     id: 4,
@@ -40,6 +45,7 @@ export const levels: Level[] = [
     starThresholds: [3, 5, 8],
     availableCommands: ["forward", "fd", "right", "rt", "left", "lt", "repeat"],
     starterCode: "// Draw a triangle\n",
+    solution: "repeat(3) { forward(100); right(120) }",
   },
   {
     id: 5,
@@ -50,6 +56,7 @@ export const levels: Level[] = [
     starThresholds: [5, 8, 15],
     availableCommands: ["forward", "fd", "right", "rt", "left", "lt", "repeat"],
     starterCode: "// Draw a staircase\n",
+    solution: "repeat(5) { forward(30); right(90); forward(30); left(90) }",
   },
   {
     id: 6,
@@ -60,6 +67,7 @@ export const levels: Level[] = [
     starThresholds: [3, 5, 10],
     availableCommands: ["forward", "fd", "right", "rt", "repeat"],
     starterCode: "// Draw a star\n",
+    solution: "repeat(5) { forward(100); right(144) }",
   },
   {
     id: 7,
@@ -70,6 +78,7 @@ export const levels: Level[] = [
     starThresholds: [3, 5, 10],
     availableCommands: ["forward", "fd", "right", "rt", "repeat"],
     starterCode: "// Draw a hexagon\n",
+    solution: "repeat(6) { forward(60); right(60) }",
   },
   {
     id: 8,
@@ -77,22 +86,27 @@ export const levels: Level[] = [
     description: "Draw a house (square + triangle roof).",
     hint: "Draw a square first, then position the turtle for the triangle roof.",
     targetDescription:
-      "A house shape: a square base with a triangular roof on top.",
+      "A house: a 100-pixel square base with a triangular roof (sides of 100) on top.",
     starThresholds: [10, 15, 20],
     availableCommands: ["forward", "fd", "back", "bk", "right", "rt", "left", "lt", "repeat"],
     starterCode: "// Draw a house: square + triangle roof\n",
+    solution: "repeat(4) { forward(100); right(90) }\nforward(100)\nright(30)\nrepeat(3) { forward(100); right(120) }",
   },
   {
     id: 9,
     name: "Colorful Square",
     description: "Draw a square where each side is a different color.",
     hint: 'Use penColor("red") to change colors between sides.',
-    targetDescription: "A square with each side a different color: red, blue, green, yellow.",
+    targetDescription: "A 100-pixel square with sides colored red, blue, green, yellow (in that order).",
     starThresholds: [12, 16, 20],
     availableCommands: [
       "forward", "fd", "right", "rt", "penColor", "color", "repeat",
     ],
     starterCode: '// Draw a colorful square\npenColor("red")\n',
+    solution: ["red", "blue", "green", "yellow"]
+      .map((c) => `penColor("${c}")\nforward(100)\nright(90)`)
+      .join("\n"),
+    matchStyle: true,
   },
   {
     id: 10,
@@ -100,11 +114,12 @@ export const levels: Level[] = [
     description: "Draw a spiral by increasing the distance each step.",
     hint: "The trick: each forward() is a little longer, and turn slightly more than 90 degrees.",
     targetDescription:
-      "A square spiral that grows outward. Each line is 5 pixels longer than the last.",
+      "A spiral of 10 lines turning right 91° each time, starting at 10 pixels and growing 5 pixels per line.",
     starThresholds: [20, 30, 50],
     availableCommands: ["forward", "fd", "right", "rt", "repeat"],
     starterCode:
       "// Draw a spiral\n// Tip: increase forward distance each time\nforward(10)\nrt(91)\nforward(15)\nrt(91)\nforward(20)\nrt(91)\n",
+    solution: Array.from({ length: 10 }, (_, i) => `forward(${10 + 5 * i})\nrt(91)`).join("\n"),
   },
   {
     id: 11,
@@ -115,6 +130,7 @@ export const levels: Level[] = [
     starThresholds: [3, 5, 8],
     availableCommands: ["forward", "fd", "right", "rt", "repeat"],
     starterCode: "// Draw a circle\n",
+    solution: "repeat(36) { fd(10); rt(10) }",
   },
   {
     id: 12,
@@ -122,10 +138,11 @@ export const levels: Level[] = [
     description: "Draw a flower by repeating circles at angles.",
     hint: "Draw a circle, turn a bit, draw another circle. Repeat!",
     targetDescription:
-      "A flower with 6 petals, each petal is a small circle rotated 60 degrees from the last.",
+      "A flower with 6 petals. Each petal is a circle of 36 steps of 5 pixels, rotated 60 degrees from the last.",
     starThresholds: [5, 8, 12],
     availableCommands: ["forward", "fd", "right", "rt", "repeat"],
     starterCode: "// Draw a flower\n// Each petal is a circle, rotated 60 degrees\n",
+    solution: "repeat(6) { repeat(36) { fd(5); rt(10) } rt(60) }",
   },
   {
     id: 13,
@@ -133,12 +150,14 @@ export const levels: Level[] = [
     description: "Use different pen sizes to draw thick and thin lines.",
     hint: "Use penSize(1) for thin and penSize(5) for thick.",
     targetDescription:
-      "Alternating thick and thin lines forming a square. Thick sides are 5px, thin sides are 1px.",
+      "A 100-pixel square with alternating sides, starting thick: thick sides are 5px, thin sides are 1px.",
     starThresholds: [10, 14, 20],
     availableCommands: [
       "forward", "fd", "right", "rt", "penSize", "repeat",
     ],
     starterCode: "// Draw with different pen sizes\npenSize(5)\n",
+    solution: "repeat(2) { penSize(5); fd(100); rt(90); penSize(1); fd(100); rt(90) }",
+    matchStyle: true,
   },
   {
     id: 14,
@@ -146,13 +165,19 @@ export const levels: Level[] = [
     description: "Draw a colorful spiral that changes color on each loop.",
     hint: "Change penColor and increase the forward distance in each iteration.",
     targetDescription:
-      "A spiral that cycles through red, orange, yellow, green, blue, purple as it grows.",
+      "The 10-line spiral from level 10, each line cycling through red, orange, yellow, green, blue, purple.",
     starThresholds: [30, 42, 60],
     availableCommands: [
       "forward", "fd", "right", "rt", "penColor", "color", "penSize", "repeat",
     ],
     starterCode:
       '// Rainbow spiral\n// Change color and increase size each loop\npenColor("red")\nforward(10)\nrt(91)\npenColor("orange")\nforward(15)\nrt(91)\n',
+    solution: Array.from(
+      { length: 10 },
+      (_, i) =>
+        `penColor("${RAINBOW[i % RAINBOW.length]}")\nforward(${10 + 5 * i})\nrt(91)`,
+    ).join("\n"),
+    matchStyle: true,
   },
   {
     id: 15,

@@ -155,7 +155,7 @@ export default function CodeEditor({
           borderRadius: 8,
           overflow: "hidden",
           flex: 1,
-          minHeight: 120,
+          minHeight: 72,
           border: "1px solid var(--line)",
         }}
       >

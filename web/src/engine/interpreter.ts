@@ -1,4 +1,5 @@
 import type { TurtleState, TurtleStep, LineSegment } from "../types";
+import { COMMAND_HELP } from "../types";
 
 const MAX_STEPS = 10_000;
 
@@ -183,7 +184,7 @@ type ASTNode =
 
 // ── Parser ───────────────────────────────────────────────────
 
-function parse(tokens: Token[]): ASTNode[] {
+function parse(tokens: Token[], allowed?: string[]): ASTNode[] {
   // Filter out comments and newlines
   const meaningful = tokens.filter(
     (t) => t.type !== "comment" && t.type !== "newline",
@@ -258,6 +259,10 @@ function parse(tokens: Token[]): ASTNode[] {
     }
 
     const line = t.line;
+
+    if (allowed && t.value in COMMAND_HELP && !allowed.includes(t.value)) {
+      throw new ParseError(`${t.value}() isn't available in this level`, line);
+    }
 
     switch (t.value) {
       case "forward":
@@ -477,6 +482,15 @@ function executeAST(
 export interface ExecutionResult {
   steps: TurtleStep[];
   error: string | null;
+  /** Commands written in the source (a repeat block counts 1 + its body). */
+  statements: number;
+}
+
+function countStatements(nodes: ASTNode[]): number {
+  return nodes.reduce(
+    (n, node) => n + 1 + (node.type === "repeat" ? countStatements(node.body) : 0),
+    0,
+  );
 }
 
 function initialState(): TurtleState {
@@ -491,25 +505,30 @@ function initialState(): TurtleState {
   };
 }
 
-export function execute(code: string): ExecutionResult {
+/** Run a program. `allowed` restricts which commands may be used. */
+export function execute(code: string, allowed?: string[]): ExecutionResult {
   const state = initialState();
   const steps: TurtleStep[] = [{ state: cloneState(state), lineNumber: 0 }];
+  let statements = 0;
 
   try {
     const tokens = tokenize(code);
-    const ast = parse(tokens);
+    const ast = parse(tokens, allowed);
+    statements = countStatements(ast);
     executeAST(ast, state, steps);
-    return { steps, error: null };
+    return { steps, error: null, statements };
   } catch (e) {
     if (e instanceof ParseError) {
       return {
         steps,
         error: `Line ${e.line}: ${e.message}`,
+        statements,
       };
     }
     return {
       steps,
       error: e instanceof Error ? e.message : "Unknown error",
+      statements,
     };
   }
 }
